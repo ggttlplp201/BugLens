@@ -1,0 +1,61 @@
+{
+  "name": "buglens",
+  "displayName": "BugLens",
+  "description": "Explains logic bugs without giving away the fix",
+  "version": "0.0.1",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "buglens.explain",
+        "title": "BugLens: Explain this bug"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "buglens.explain",
+          "when": "editorHasSelection",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "BugLens",
+      "properties": {
+        "buglens.provider": {
+          "type": "string",
+          "enum": ["openai", "anthropic"],
+          "default": "openai",
+          "description": "LLM provider to use"
+        },
+        "buglens.model": {
+          "type": "string",
+          "default": "gpt-4o",
+          "description": "Model name (e.g. gpt-4o, claude-sonnet-4-6)"
+        },
+        "buglens.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for the selected provider"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "esbuild": "^0.20.0"
+  },
+  "dependencies": {
+    "openai": "^4.28.0",
+    "@anthropic-ai/sdk": "^0.18.0"
+  }
+}
