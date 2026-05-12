@@ -17,6 +17,17 @@ export async function* streamExplanation(
     );
   }
 
+  if (provider === 'anthropic' && model.startsWith('gpt-')) {
+    throw new Error(
+      `Model "${model}" is an OpenAI model but provider is set to "anthropic". Update buglens.model (e.g. claude-sonnet-4-6).`
+    );
+  }
+  if (provider === 'openai' && (model.startsWith('claude-') || model.startsWith('claude'))) {
+    throw new Error(
+      `Model "${model}" is an Anthropic model but provider is set to "openai". Update buglens.model (e.g. gpt-4o).`
+    );
+  }
+
   if (provider === 'openai') {
     const client = new OpenAI({ apiKey });
     const stream = await client.chat.completions.create({

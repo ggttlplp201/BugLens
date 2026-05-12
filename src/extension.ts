@@ -13,7 +13,7 @@ export function activate(context: vscode.ExtensionContext): void {
     if (!selectedText.trim()) return;
 
     const fileContent = editor.document.getText();
-    const filename = editor.document.fileName.split('/').pop() ?? 'file';
+    const filename = editor.document.fileName.split(/[\\/]/).pop() ?? 'file';
     const startLine = selection.start.line + 1;
     const endLine = selection.end.line + 1;
     const lineRange = startLine === endLine

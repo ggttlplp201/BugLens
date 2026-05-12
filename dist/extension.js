@@ -19472,6 +19472,16 @@ async function* streamExplanation(system, user) {
       "No API key set. Go to Settings and add your key under buglens.apiKey."
     );
   }
+  if (provider === "anthropic" && model.startsWith("gpt-")) {
+    throw new Error(
+      `Model "${model}" is an OpenAI model but provider is set to "anthropic". Update buglens.model (e.g. claude-sonnet-4-6).`
+    );
+  }
+  if (provider === "openai" && (model.startsWith("claude-") || model.startsWith("claude"))) {
+    throw new Error(
+      `Model "${model}" is an Anthropic model but provider is set to "openai". Update buglens.model (e.g. gpt-4o).`
+    );
+  }
   if (provider === "openai") {
     const client = new openai_default({ apiKey });
     const stream = await client.chat.completions.create({
@@ -19758,7 +19768,7 @@ function activate(context) {
     if (!selectedText.trim())
       return;
     const fileContent = editor.document.getText();
-    const filename = editor.document.fileName.split("/").pop() ?? "file";
+    const filename = editor.document.fileName.split(/[\\/]/).pop() ?? "file";
     const startLine = selection.start.line + 1;
     const endLine = selection.end.line + 1;
     const lineRange = startLine === endLine ? `line ${startLine}` : `lines ${startLine}\u2013${endLine}`;
