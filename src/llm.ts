@@ -35,14 +35,15 @@ export async function* streamExplanation(
     const client = new Anthropic({ apiKey });
     const stream = (await client.messages.create({
       model,
-      max_tokens: 1024,
+      max_tokens: 2048,
       system,
       messages: [{ role: 'user', content: user }],
       stream: true,
     } as any)) as unknown as AsyncIterable<{ type: string; delta: { type: string; text?: string } }>;
     for await (const event of stream) {
       if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        yield event.delta.text ?? '';
+        const text = event.delta.text ?? '';
+        if (text) yield text;
       }
     }
   } else {
