@@ -4,6 +4,7 @@ export class BugLensPanel {
   private static current: BugLensPanel | undefined;
   private readonly webviewPanel: vscode.WebviewPanel;
   private buffer = '';
+  private sessionId = 0;
 
   static show(): BugLensPanel {
     if (BugLensPanel.current) {
@@ -31,6 +32,7 @@ export class BugLensPanel {
 
   reset(): void {
     this.buffer = '';
+    this.sessionId++;
     this.webviewPanel.webview.postMessage({ type: 'reset' });
   }
 
@@ -38,9 +40,14 @@ export class BugLensPanel {
     this.webviewPanel.webview.postMessage({ type: 'header', filename, lineRange });
   }
 
-  appendChunk(chunk: string): void {
+  appendChunk(chunk: string, forSession: number): void {
+    if (forSession !== this.sessionId) return;
     this.buffer += chunk;
     this.webviewPanel.webview.postMessage({ type: 'update', text: this.buffer });
+  }
+
+  getSessionId(): number {
+    return this.sessionId;
   }
 
   showError(message: string): void {
@@ -160,7 +167,7 @@ export class BugLensPanel {
     // Matches **Title** markers — two asterisks, title text, two asterisks
     var positions = [];
     var i = 0;
-    while (i < text.length - 3) {
+    while (i < text.length - 1) {
       if (text[i] === '*' && text[i+1] === '*') {
         var end = text.indexOf('**', i + 2);
         if (end !== -1) {
@@ -174,7 +181,7 @@ export class BugLensPanel {
     var sections = [];
     for (var j = 0; j < positions.length; j++) {
       var bodyEnd = j + 1 < positions.length
-        ? text.lastIndexOf('**' + positions[j + 1].title + '**', positions[j + 1].bodyStart)
+        ? positions[j + 1].bodyStart - positions[j + 1].title.length - 4
         : text.length;
       sections.push([
         positions[j].title.trim(),
