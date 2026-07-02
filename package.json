@@ -2,7 +2,7 @@
   "name": "buglens",
   "displayName": "BugLens",
   "description": "Explains logic bugs without giving away the fix",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "ggttlplp201",
   "license": "MIT",
   "repository": {

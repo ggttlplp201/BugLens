@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2
+
+- Hardened the tutor prompt: the model may no longer show corrected code, use
+  the user's identifiers in snippets, or name the API that would implement the
+  fix — snippets may only demonstrate the surprising behavior on toy data
+- When a bug breaks an assumption in a related file, the model must now name
+  that file and the invariant it violates
+
 ## 0.2.1
 
 - Triple-backtick code fences in explanations now render as proper code blocks
