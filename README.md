@@ -14,45 +14,32 @@ When you ask an LLM to fix a bug, it hands you a clean rewrite that looks nothin
 
 ## Install
 
-### Option A: Install from folder (development)
-
 ```bash
 git clone https://github.com/ggttlplp201/BugLens.git
 cd BugLens/buglens
 npm install
-npm run build
-cp -r . ~/.vscode/extensions/buglens-0.0.1
+npm run package
 ```
 
-Then in VS Code: `Cmd+Shift+P` → **Developer: Reload Window**
-
-### Option B: Install from VSIX (once packaged)
-
-```bash
-npm install -g vsce
-cd buglens
-vsce package
-```
-
-Then in VS Code: `Cmd+Shift+P` → **Extensions: Install from VSIX...** → select the generated `.vsix` file.
+Then in VS Code: `Cmd+Shift+P` → **Extensions: Install from VSIX...** → select the generated `buglens-0.1.0.vsix`.
 
 ---
 
 ## Setup
 
-1. Open VS Code Settings (`Cmd+,` on Mac, `Ctrl+,` on Windows/Linux)
-2. Search for **BugLens**
-3. Set the following:
+1. `Cmd+Shift+P` → **BugLens: Set API Key** — the key is stored in VS Code's secret storage, never in plaintext settings. (You'll also be prompted automatically on first use.)
+2. Optionally adjust provider and model in Settings (`Cmd+,`, search for **BugLens**):
 
 | Setting | Description | Example |
 |---|---|---|
-| `buglens.provider` | LLM provider | `openai` or `anthropic` |
+| `buglens.provider` | LLM provider | `openai` (default) or `anthropic` |
 | `buglens.model` | Model name | `gpt-4o` (OpenAI) or `claude-sonnet-4-6` (Anthropic) |
-| `buglens.apiKey` | Your API key | `sk-...` or `sk-ant-...` |
 
 **OpenAI models:** `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`
 
 **Anthropic models:** `claude-opus-4-7`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`
+
+To remove a stored key: `Cmd+Shift+P` → **BugLens: Clear API Key**.
 
 ---
 
@@ -108,12 +95,10 @@ You want to sum the values stored in the array, not count how many elements ther
 ```
 buglens/
 ├── src/
-│   ├── extension.ts   # Entry point — registers command, orchestrates flow
-│   ├── prompt.ts      # Builds the system + user prompt
-│   ├── llm.ts         # Streams from OpenAI or Anthropic
-│   └── panel.ts       # WebView side panel renderer
-├── dist/
-│   └── extension.js   # Bundled output (esbuild)
+│   ├── extension.ts   # Entry point — commands, API key storage, request lifecycle
+│   ├── prompt.ts      # Builds the system + user prompt, caps context for large files
+│   ├── llm.ts         # Streams from OpenAI or Anthropic (cancellable)
+│   └── panel.ts       # WebView side panel renderer (theme-aware)
 ├── package.json
 ├── tsconfig.json
 └── esbuild.js
@@ -127,6 +112,8 @@ buglens/
 npm install
 npm run build       # one-time build
 npm run watch       # rebuild on file changes
+npm run typecheck   # strict TypeScript check
+npm run package     # build a .vsix for installing
 ```
 
 After rebuilding, reload the VS Code window for changes to take effect.
