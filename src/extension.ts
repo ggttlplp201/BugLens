@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { buildPrompt } from './prompt';
 import { streamExplanation } from './llm';
 import { BugLensPanel } from './panel';
+import { gatherRelatedFiles } from './context';
 
 const API_KEY_SECRET = 'buglens.apiKey';
 
@@ -40,12 +41,14 @@ export function activate(context: vscode.ExtensionContext): void {
     panel.setHeader(filename, lineRange, selectedText);
 
     const sessionId = panel.getSessionId();
+    const relatedFiles = await gatherRelatedFiles(editor.document);
     const { system, user } = buildPrompt(
       filename,
       fileContent,
       selectedText,
       editor.document.offsetAt(selection.start),
-      editor.document.offsetAt(selection.end)
+      editor.document.offsetAt(selection.end),
+      relatedFiles
     );
 
     currentRequest?.abort();

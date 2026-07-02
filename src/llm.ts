@@ -2,6 +2,11 @@ import * as vscode from 'vscode';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 
+const DEFAULT_MODELS: Record<string, string> = {
+  openai: 'gpt-4o',
+  anthropic: 'claude-sonnet-4-6',
+};
+
 export async function* streamExplanation(
   system: string,
   user: string,
@@ -10,7 +15,7 @@ export async function* streamExplanation(
 ): AsyncGenerator<string> {
   const config = vscode.workspace.getConfiguration('buglens');
   const provider = config.get<string>('provider', 'openai');
-  const model = config.get<string>('model', 'gpt-4o');
+  const model = config.get<string>('model', '') || DEFAULT_MODELS[provider] || '';
 
   if (provider === 'anthropic' && model.startsWith('gpt-')) {
     throw new Error(

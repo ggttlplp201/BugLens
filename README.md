@@ -33,7 +33,7 @@ Then in VS Code: `Cmd+Shift+P` → **Extensions: Install from VSIX...** → sele
 | Setting | Description | Example |
 |---|---|---|
 | `buglens.provider` | LLM provider | `openai` (default) or `anthropic` |
-| `buglens.model` | Model name | `gpt-4o` (OpenAI) or `claude-sonnet-4-6` (Anthropic) |
+| `buglens.model` | Model name; leave empty for the provider default (`gpt-4o` / `claude-sonnet-4-6`) | `gpt-4o-mini` |
 
 **OpenAI models:** `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`
 
@@ -90,12 +90,26 @@ You want to sum the values stored in the array, not count how many elements ther
 
 ---
 
+## Cross-file bugs
+
+BugLens doesn't just look at the current file. It also sends:
+
+- files the current file **imports** (what the highlighted code depends on)
+- files that **import the current file** (where the highlighted code is used — and where non-local bugs actually surface)
+
+Try it: open `examples/store/inventory.js`, highlight the body of `lowestStock()`, and ask BugLens to explain. The function is flawless in isolation — the explanation should point out that `Array.prototype.sort` mutates the shared catalog, breaking the "last element is newest" invariant that `app.js` relies on. Run `node examples/store/app.js` to see the wrong output for yourself.
+
+Context is capped (6 related files, ~24k characters) so large projects stay fast and cheap.
+
+---
+
 ## Project Structure
 
 ```
 buglens/
 ├── src/
 │   ├── extension.ts   # Entry point — commands, API key storage, request lifecycle
+│   ├── context.ts     # Gathers related files (imports + importers) from the workspace
 │   ├── prompt.ts      # Builds the system + user prompt, caps context for large files
 │   ├── llm.ts         # Streams from OpenAI or Anthropic (cancellable)
 │   └── panel.ts       # WebView side panel renderer (theme-aware)

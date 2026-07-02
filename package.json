@@ -2,7 +2,7 @@
   "name": "buglens",
   "displayName": "BugLens",
   "description": "Explains logic bugs without giving away the fix",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "ggttlplp201",
   "license": "MIT",
   "repository": {
@@ -62,8 +62,8 @@
         },
         "buglens.model": {
           "type": "string",
-          "default": "gpt-4o",
-          "description": "Model name (e.g. gpt-4o, claude-sonnet-4-6)"
+          "default": "",
+          "description": "Model name (e.g. gpt-4o, claude-sonnet-4-6). Leave empty to use the provider's default: gpt-4o for OpenAI, claude-sonnet-4-6 for Anthropic."
         },
         "buglens.apiKey": {
           "type": "string",

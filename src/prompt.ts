@@ -1,3 +1,5 @@
+import type { RelatedFile } from './context';
+
 export interface Prompt {
   system: string;
   user: string;
@@ -13,12 +15,14 @@ export function buildPrompt(
   fileContent: string,
   selectedText: string,
   selectionStart: number,
-  selectionEnd: number
+  selectionEnd: number,
+  relatedFiles: RelatedFile[] = []
 ): Prompt {
   const system = [
     'You are a coding tutor. A developer has highlighted a section of code they believe has a logic bug.',
     'Your job is to explain what is wrong and why — never provide a corrected version of their code.',
     'You may use short illustrative snippets (e.g. showing what an expression evaluates to) but never rewrite the user\'s logic for them.',
+    'You may also receive related files from the same project. The highlighted code can look correct in isolation while breaking an assumption elsewhere — check how it is used by and interacts with the related files before deciding what is wrong.',
     'No emojis. Respond using exactly this structure:',
     '',
     '**What your code does**',
@@ -31,11 +35,18 @@ export function buildPrompt(
     '[explain the underlying principle, optionally with a small illustrative snippet]',
   ].join('\n');
 
+  const relatedSections = relatedFiles.flatMap(file => [
+    '',
+    `Related file: ${file.relativePath}`,
+    file.content,
+  ]);
+
   const user = [
     `File: ${filename}`,
     '',
     'Full file:',
     windowAroundSelection(fileContent, selectionStart, selectionEnd),
+    ...relatedSections,
     '',
     'Highlighted code (the suspected bug):',
     truncateMiddle(selectedText, MAX_SELECTION_CHARS),
