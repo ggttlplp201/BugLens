@@ -2,15 +2,41 @@
   "name": "buglens",
   "displayName": "BugLens",
   "description": "Explains logic bugs without giving away the fix",
-  "version": "0.0.1",
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Other"],
+  "version": "0.1.0",
+  "publisher": "ggttlplp201",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ggttlplp201/BugLens.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Education",
+    "Other"
+  ],
+  "keywords": [
+    "bug",
+    "explain",
+    "tutor",
+    "learning",
+    "llm"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "buglens.explain",
         "title": "BugLens: Explain this bug"
+      },
+      {
+        "command": "buglens.setApiKey",
+        "title": "BugLens: Set API Key"
+      },
+      {
+        "command": "buglens.clearApiKey",
+        "title": "BugLens: Clear API Key"
       }
     ],
     "menus": {
@@ -27,7 +53,10 @@
       "properties": {
         "buglens.provider": {
           "type": "string",
-          "enum": ["openai", "anthropic"],
+          "enum": [
+            "openai",
+            "anthropic"
+          ],
           "default": "openai",
           "description": "LLM provider to use"
         },
@@ -39,23 +68,27 @@
         "buglens.apiKey": {
           "type": "string",
           "default": "",
-          "description": "API key for the selected provider"
+          "markdownDeprecationMessage": "**Deprecated:** use the `BugLens: Set API Key` command instead — it stores the key in VS Code secret storage rather than plaintext settings."
         }
       }
     }
   },
   "scripts": {
+    "vscode:prepublish": "npm run build",
     "build": "node esbuild.js",
-    "watch": "node esbuild.js --watch"
+    "watch": "node esbuild.js --watch",
+    "typecheck": "tsc --noEmit",
+    "package": "vsce package"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.3.0",
-    "esbuild": "^0.20.0"
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
   },
   "dependencies": {
-    "openai": "^4.28.0",
-    "@anthropic-ai/sdk": "^0.18.0"
+    "@anthropic-ai/sdk": "^0.109.1",
+    "openai": "^6.45.0"
   }
 }
