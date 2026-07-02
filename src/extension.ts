@@ -37,15 +37,22 @@ export function activate(context: vscode.ExtensionContext): void {
       ? `line ${startLine}`
       : `lines ${startLine}–${endLine}`;
 
+    // Expand to full lines and strip common indentation, so a selection that
+    // starts mid-line doesn't display (or get sent) with skewed spacing
+    const highlighted = dedent(editor.document.getText(new vscode.Range(
+      selection.start.line, 0,
+      endLine - 1, editor.document.lineAt(endLine - 1).text.length
+    )));
+
     const panel = BugLensPanel.show();
-    panel.setHeader(filename, lineRange, selectedText);
+    panel.setHeader(filename, lineRange, highlighted);
 
     const sessionId = panel.getSessionId();
     const relatedFiles = await gatherRelatedFiles(editor.document);
     const { system, user } = buildPrompt(
       filename,
       fileContent,
-      selectedText,
+      highlighted,
       editor.document.offsetAt(selection.start),
       editor.document.offsetAt(selection.end),
       relatedFiles
@@ -100,6 +107,17 @@ async function getApiKey(context: vscode.ExtensionContext): Promise<string | und
   }
 
   return promptForApiKey(context);
+}
+
+function dedent(text: string): string {
+  const lines = text.split('\n');
+  let minIndent = Infinity;
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    minIndent = Math.min(minIndent, /^[ \t]*/.exec(line)![0].length);
+  }
+  if (!isFinite(minIndent) || minIndent === 0) return text;
+  return lines.map(line => line.slice(minIndent)).join('\n');
 }
 
 async function clearLegacySettingsKey(): Promise<void> {

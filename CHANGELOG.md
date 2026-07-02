@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+- Triple-backtick code fences in explanations now render as proper code blocks
+  (previously only 4-space-indented blocks were recognized)
+- The highlighted-code preview expands to full lines and strips common
+  indentation, so selections starting mid-line no longer display skewed
+
 ## 0.2.0
 
 - Cross-file context: the prompt now includes files the current file imports

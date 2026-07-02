@@ -164,6 +164,7 @@ export class BugLensPanel {
 
 <script nonce="${nonce}">
   var streaming = false;
+  var TICK = String.fromCharCode(96);
 
   window.addEventListener('message', function(event) {
     var msg = event.data;
@@ -242,33 +243,44 @@ export class BugLensPanel {
   }
 
   function formatBody(text) {
-    // Code blocks: lines indented 4+ spaces are wrapped in <pre>
+    // Code blocks: triple-backtick fences, plus lines indented 4+ spaces
+    var fence = TICK + TICK + TICK;
     var lines = text.split('\\n');
     var result = '';
-    var inBlock = false;
+    var inFence = false;
+    var inIndent = false;
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i];
-      if (!inBlock && line.startsWith('    ')) {
-        result += '<pre>';
-        inBlock = true;
-      } else if (inBlock && !line.startsWith('    ') && line.trim() !== '') {
-        result += '</pre>';
-        inBlock = false;
+      if (line.trim().indexOf(fence) === 0) {
+        if (inIndent) { result += '</pre>'; inIndent = false; }
+        result += inFence ? '</pre>' : '<pre>';
+        inFence = !inFence;
+        continue; // the fence line itself (incl. language tag) is not content
       }
-      if (inBlock) {
+      if (inFence) {
+        result += escapeHtml(line) + '\\n';
+        continue;
+      }
+      if (!inIndent && line.startsWith('    ')) {
+        result += '<pre>';
+        inIndent = true;
+      } else if (inIndent && !line.startsWith('    ') && line.trim() !== '') {
+        result += '</pre>';
+        inIndent = false;
+      }
+      if (inIndent) {
         result += escapeHtml(line.slice(4)) + '\\n';
       } else {
         result += formatInline(line) + '<br>';
       }
     }
-    if (inBlock) result += '</pre>';
+    if (inFence || inIndent) result += '</pre>';
     return result;
   }
 
   function formatInline(text) {
-    // Replace inline code: text between backtick characters (char code 96)
-    var tick = String.fromCharCode(96);
-    var parts = text.split(tick);
+    // Replace inline code: text between backtick characters
+    var parts = text.split(TICK);
     var out = '';
     for (var i = 0; i < parts.length; i++) {
       if (i % 2 === 0) {
