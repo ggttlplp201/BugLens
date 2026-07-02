@@ -49,6 +49,10 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const sessionId = panel.getSessionId();
     const relatedFiles = await gatherRelatedFiles(editor.document);
+    // A newer invocation may have started while we were gathering context —
+    // bail before we abort (and thereby kill) its request below
+    if (panel.isDisposed() || panel.getSessionId() !== sessionId) return;
+    panel.setContextFiles(relatedFiles.map(f => f.relativePath), sessionId);
     const { system, user } = buildPrompt(
       filename,
       fileContent,

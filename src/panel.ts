@@ -53,6 +53,11 @@ export class BugLensPanel {
     this.post({ type: 'header', filename, lineRange, selectedCode });
   }
 
+  setContextFiles(names: string[], forSession: number): void {
+    if (forSession !== this.sessionId) return;
+    this.post({ type: 'context', names });
+  }
+
   appendChunk(chunk: string, forSession: number): void {
     if (forSession !== this.sessionId) return;
     this.buffer += chunk;
@@ -91,6 +96,12 @@ export class BugLensPanel {
     margin: 0;
   }
   #meta {
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+    font-family: var(--vscode-editor-font-family, monospace);
+    margin-bottom: 2px;
+  }
+  #context-files {
     font-size: 11px;
     color: var(--vscode-descriptionForeground);
     font-family: var(--vscode-editor-font-family, monospace);
@@ -159,6 +170,7 @@ export class BugLensPanel {
 </head>
 <body>
 <div id="meta"></div>
+<div id="context-files"></div>
 <div id="selected-code"></div>
 <div id="content"><div id="status">Select code and run BugLens: Explain this bug.</div></div>
 
@@ -171,8 +183,13 @@ export class BugLensPanel {
     if (msg.type === 'reset') {
       streaming = false;
       document.getElementById('meta').textContent = '';
+      document.getElementById('context-files').textContent = '';
       document.getElementById('selected-code').innerHTML = '';
       document.getElementById('content').innerHTML = '<div id="status">Analyzing\\u2026</div>';
+    } else if (msg.type === 'context') {
+      document.getElementById('context-files').textContent = msg.names.length
+        ? 'context: ' + msg.names.join(' \\u00b7 ')
+        : 'context: none (no related files found)';
     } else if (msg.type === 'header') {
       var lineStr = msg.lineRange ? ' \\u00b7 ' + msg.lineRange : '';
       document.getElementById('meta').textContent = msg.filename + lineStr;

@@ -11,6 +11,7 @@ const MAX_RELATED_FILES = 6;
 const MAX_CHARS_PER_FILE = 8000;
 const MAX_TOTAL_CHARS = 24000;
 const MAX_FILES_SCANNED = 300;
+const MAX_WORKSPACE_FILES = 2000;
 const MAX_FILE_BYTES = 262144;
 
 // Matches the specifier in: import ... from 'x' | import('x') | require('x') | export ... from 'x'
@@ -90,20 +91,48 @@ async function findImporters(document: vscode.TextDocument): Promise<vscode.Uri[
   const folder = vscode.workspace.getWorkspaceFolder(document.uri);
   if (!folder) return [];
 
-  // A file importing this one must mention its basename in a relative specifier
+  // A file importing this one must mention its basename in a relative
+  // specifier — or, for index files, the directory name (import './store'
+  // resolves to store/index.js)
   const basename = path.basename(document.uri.fsPath).replace(/\.(ts|tsx|js|jsx|mjs|cjs)$/, '');
+  const docDir = path.dirname(document.uri.fsPath);
+  const needles = [basename];
+  if (basename === 'index') needles.push(path.basename(docDir));
   const mentionRe = new RegExp(
-    `['"]\\.{1,2}(?:/[^'"]*)*/${escapeRegExp(basename)}(?:\\.[a-z]+)?['"]`
+    needles
+      .map(n => `['"]\\.{1,2}(?:/[^'"]*)*/${escapeRegExp(n)}(?:\\.[a-z]+)?['"]`)
+      .join('|')
   );
 
-  const files = await vscode.workspace.findFiles(
-    new vscode.RelativePattern(folder, '**/*.{js,jsx,ts,tsx,mjs,cjs}'),
-    '**/node_modules/**',
-    MAX_FILES_SCANNED
-  );
+  // findFiles itself caps results with no ordering guarantee, so in a huge
+  // workspace nearby files could be dropped before the proximity sort ever
+  // sees them — fetch the current file's subtree separately to guarantee
+  // local candidates are always in the pool
+  const [local, workspaceWide] = await Promise.all([
+    vscode.workspace.findFiles(
+      new vscode.RelativePattern(docDir, '**/*.{js,jsx,ts,tsx,mjs,cjs}'),
+      '**/node_modules/**',
+      MAX_FILES_SCANNED
+    ),
+    vscode.workspace.findFiles(
+      new vscode.RelativePattern(folder, '**/*.{js,jsx,ts,tsx,mjs,cjs}'),
+      '**/node_modules/**',
+      MAX_WORKSPACE_FILES
+    ),
+  ]);
+  const byPath = new Map<string, vscode.Uri>();
+  for (const uri of [...local, ...workspaceWide]) byPath.set(uri.fsPath, uri);
+
+  // Scan nearest files first: importers usually live close to the file they
+  // import, and the scan budget runs out long before the file list does
+  const nearestFirst = [...byPath.values()]
+    .map(uri => ({ uri, shared: sharedPathSegments(docDir, path.dirname(uri.fsPath)) }))
+    .sort((a, b) => b.shared - a.shared || a.uri.fsPath.length - b.uri.fsPath.length)
+    .slice(0, MAX_FILES_SCANNED)
+    .map(entry => entry.uri);
 
   const importers: vscode.Uri[] = [];
-  for (const uri of files) {
+  for (const uri of nearestFirst) {
     if (uri.fsPath === document.uri.fsPath) continue;
     const content = await readCapped(uri, /* forScan */ true);
     if (content === undefined || !mentionRe.test(content)) continue;
@@ -141,6 +170,14 @@ async function readCapped(uri: vscode.Uri, forScan = false): Promise<string | un
   } catch {
     return undefined;
   }
+}
+
+function sharedPathSegments(a: string, b: string): number {
+  const aParts = a.split(path.sep);
+  const bParts = b.split(path.sep);
+  let i = 0;
+  while (i < aParts.length && i < bParts.length && aParts[i] === bParts[i]) i++;
+  return i;
 }
 
 function escapeRegExp(str: string): string {

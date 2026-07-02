@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.3
+
+- The panel now shows which related files were sent as context
+  (`context: examples/store/app.js` or `context: none`)
+- Importer scanning is proximity-first and always includes the current
+  file's own subtree, so large monorepo workspaces no longer exhaust the
+  scan budget before reaching nearby files
+- Directory imports of index files (`import './store'` → `store/index.js`)
+  are now detected
+- Fixed a race where a slow older request could cancel a newer one
+
 ## 0.2.2
 
 - Hardened the tutor prompt: the model may no longer show corrected code, use
