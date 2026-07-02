@@ -6,6 +6,7 @@ export interface Prompt {
 // Roughly 8k tokens of file context — plenty for explaining a local logic bug
 // without sending an entire large file on every request.
 const MAX_CONTEXT_CHARS = 24000;
+const MAX_SELECTION_CHARS = 12000;
 
 export function buildPrompt(
   filename: string,
@@ -37,7 +38,7 @@ export function buildPrompt(
     windowAroundSelection(fileContent, selectionStart, selectionEnd),
     '',
     'Highlighted code (the suspected bug):',
-    selectedText,
+    truncateMiddle(selectedText, MAX_SELECTION_CHARS),
   ].join('\n');
 
   return { system, user };
@@ -56,5 +57,12 @@ function windowAroundSelection(
   const end = Math.min(fileContent.length, selectionEnd + Math.ceil(spare / 2));
   const prefix = start > 0 ? '… [file truncated] …\n' : '';
   const suffix = end < fileContent.length ? '\n… [file truncated] …' : '';
-  return prefix + fileContent.slice(start, end) + suffix;
+  // A selection larger than the cap would otherwise make the window unbounded
+  return prefix + truncateMiddle(fileContent.slice(start, end), MAX_CONTEXT_CHARS) + suffix;
+}
+
+function truncateMiddle(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const half = Math.floor(max / 2);
+  return text.slice(0, half) + '\n… [truncated] …\n' + text.slice(text.length - half);
 }

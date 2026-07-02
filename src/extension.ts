@@ -76,6 +76,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const clearApiKey = vscode.commands.registerCommand('buglens.clearApiKey', async () => {
     await context.secrets.delete(API_KEY_SECRET);
+    await clearLegacySettingsKey();
     void vscode.window.showInformationMessage('BugLens: API key cleared.');
   });
 
@@ -86,11 +87,27 @@ async function getApiKey(context: vscode.ExtensionContext): Promise<string | und
   const stored = await context.secrets.get(API_KEY_SECRET);
   if (stored) return stored;
 
-  // Legacy fallback: key configured in settings before SecretStorage existed
+  // Migrate a key configured in settings before SecretStorage existed,
+  // so plaintext settings stop being an active fallback
   const fromSettings = vscode.workspace.getConfiguration('buglens').get<string>('apiKey', '');
-  if (fromSettings) return fromSettings;
+  if (fromSettings) {
+    await context.secrets.store(API_KEY_SECRET, fromSettings);
+    await clearLegacySettingsKey();
+    return fromSettings;
+  }
 
   return promptForApiKey(context);
+}
+
+async function clearLegacySettingsKey(): Promise<void> {
+  const config = vscode.workspace.getConfiguration('buglens');
+  const info = config.inspect<string>('apiKey');
+  if (info?.globalValue !== undefined) {
+    await config.update('apiKey', undefined, vscode.ConfigurationTarget.Global);
+  }
+  if (info?.workspaceValue !== undefined) {
+    await config.update('apiKey', undefined, vscode.ConfigurationTarget.Workspace);
+  }
 }
 
 async function promptForApiKey(context: vscode.ExtensionContext): Promise<string | undefined> {
