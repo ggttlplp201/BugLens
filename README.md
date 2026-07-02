@@ -99,7 +99,30 @@ BugLens doesn't just look at the current file. It also sends:
 
 Try it: open `examples/store/inventory.js`, highlight the body of `lowestStock()`, and ask BugLens to explain. The function is flawless in isolation — the explanation should point out that `Array.prototype.sort` mutates the shared catalog, breaking the "last element is newest" invariant that `app.js` relies on. Run `node examples/store/app.js` to see the wrong output for yourself.
 
+The panel shows a `context:` line listing exactly which related files were sent, or `context: none` when nothing relevant was found — so you can always tell what the model actually saw.
+
 Context is capped (6 related files, ~24k characters) so large projects stay fast and cheap.
+
+---
+
+## Evaluating a model
+
+Because BugLens sends the same prompt and the same cross-file context to whichever provider you pick, it doubles as a way to compare how well different models actually *understand a codebase* — not just how fluent they sound.
+
+The `examples/store/` demo is designed for this. The bug is invisible in the highlighted function alone; a model only gets it right by reading the related file it was handed. Use it to score a model on three things:
+
+1. **Did it use the context?** A passing answer names `app.js` and the specific broken assumption ("the last element is the newest product"). A failing one stays vague ("if you use the array elsewhere…") — a tell that it ignored the context even though the `context:` line confirms it was sent.
+2. **Did it respect the constraint?** BugLens forbids handing over the fix. A disciplined model explains the in-place mutation with toy data and stops; a weaker one leaks the answer (`[...products].sort(...)`, "use slice/spread") despite being told not to.
+3. **Was the diagnosis correct?** The root cause is `Array.prototype.sort` mutating the shared array — not the `slice`, not the comparator.
+
+### Running the comparison
+
+1. Open `examples/store/inventory.js` and highlight the body of `lowestStock()`.
+2. Set `buglens.provider` to `openai` (leave `buglens.model` empty → `gpt-4o`), run **BugLens: Explain this bug**, and note the answer against the three criteria above.
+3. Run **BugLens: Set API Key** with your Anthropic key, switch `buglens.provider` to `anthropic` (leave the model empty → `claude-sonnet-4-6`), and run it again on the same selection.
+4. Compare. Both models received identical input, so any difference is the model — not the prompt or the context.
+
+To pin exact models rather than the provider defaults, set `buglens.model` (e.g. `gpt-4o-mini`, `claude-haiku-4-5-20251001`) and repeat.
 
 ---
 
